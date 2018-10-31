@@ -74,7 +74,7 @@ var (
 )
 
 const (
-	arm64GccVersion = "4.9"
+	arm64GccVersion = "8.x"
 )
 
 func init() {
