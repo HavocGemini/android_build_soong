@@ -15,8 +15,14 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"io/ioutil"
+	"path"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"android/soong/android"
@@ -114,6 +120,8 @@ var (
 
 	NdkMaxPrebuiltVersionInt = 27
 
+	SDClang                  = false
+
 	// prebuilts/clang default settings.
 	ClangDefaultBase         = "prebuilts/clang/host"
 	ClangDefaultVersion      = "clang-4691093"
@@ -179,6 +187,44 @@ func init() {
 	pctx.PrefixedExistentPathsForSourcesVariable("CommonNativehelperInclude", "-I",
 		[]string{"libnativehelper/include_jni"})
 
+	// Override SDCLANG if the varialbe is set in the environment
+	if sdclang := android.SdclangEnv["SDCLANG"]; sdclang != "" {
+		if override, err := strconv.ParseBool(sdclang); err == nil {
+			SDClang = override && useSdclang()
+		}
+	}
+
+	pctx.VariableFunc("SDClangBin", func(ctx android.PackageVarContext) string {
+		if override := ctx.Config().Getenv("SDCLANG_PATH"); override != "" {
+			return override
+		}
+		return "${ClangBin}/"
+	})
+	pctx.VariableFunc("SDClangFlags", func(ctx android.PackageVarContext) string {
+		if override := ctx.Config().Getenv("SDCLANG_COMMON_FLAGS"); override != "" {
+			return override
+		}
+		return ""
+	})
+
+	// Find the path to SDLLVM's ASan libraries
+	var absPath string
+	absPath  = "${SDClangBin}/"
+
+	libDir, err := ioutil.ReadDir(path.Join(absPath, "../lib/clang"))
+	if err != nil {
+		print(err)
+	}
+
+	if len(libDir) > 0 {
+		if len(libDir) < 1 || !libDir[0].IsDir() {
+			print("Failed to find sanitizer libraries")
+		}
+		pctx.StaticVariable("SDClangAsanLibDir", path.Join(absPath, "../lib/clang", libDir[0].Name(), "lib/linux"))
+	} else {
+		pctx.StaticVariable("SDClangAsanLibDir", "${SDClangBin}/../lib/clang/*/lib/linux")
+	}
+
 	pctx.SourcePathVariable("ClangDefaultBase", ClangDefaultBase)
 	pctx.VariableFunc("ClangBase", func(ctx android.PackageVarContext) string {
 		if override := ctx.Config().Getenv("LLVM_PREBUILTS_BASE"); override != "" {
@@ -228,6 +274,27 @@ func init() {
 		}
 		return ""
 	})
+
+	pctx.VariableFunc("VendorClangFlags", func(ctx android.PackageVarContext) string {
+		if override := ctx.Config().Getenv("VENDOR_CLANG_FLAGS"); override != "" {
+			return override
+		}
+		return ""
+	})
+
+	pctx.VariableFunc("QuicksilverBin", func(ctx android.PackageVarContext) string {
+		if override := ctx.Config().Getenv("QUICKSILVER_BIN"); override != "" {
+			return override
+		}
+		return "${ClangBin}/"
+	})
+
+	pctx.VariableFunc("QuicksilverSDBin", func(ctx android.PackageVarContext) string {
+		if override := ctx.Config().Getenv("QUICKSILVER_SD_BIN"); override != "" {
+			return override
+		}
+		return "${SDClangBin}/"
+	})
 }
 
 var HostPrebuiltTag = pctx.VariableConfigMethod("HostPrebuiltTag", android.Config.PrebuiltOS)
@@ -247,4 +314,34 @@ func replaceFirst(slice []string, from, to string) {
 		panic(fmt.Errorf("Expected %q, found %q", from, to))
 	}
 	slice[0] = to
+}
+
+func useSdclang() bool {
+	var outDir string
+	outDir = android.SdclangEnv["OUT_DIR"]
+	if outDir == "" {
+		outDir = android.SdclangEnv["ANDROID_BUILD_TOP"] + "/out"
+	}
+
+
+	varFile := filepath.Join(outDir, "/soong/soong.variables")
+	//fmt.Println(varFile)
+	var varConfig interface{}
+	if file, err := os.Open(varFile); err == nil {
+		decoder := json.NewDecoder(file)
+		// Parse the config file
+		if err := decoder.Decode(&varConfig); err == nil {
+			config := varConfig.(map[string]interface{})
+			// Retrieve the Carbon block
+			if dev, ok := config["Carbon"]; ok {
+				devConfig := dev.(map[string]interface{})
+				// Get value of TARGET_USE_SDCLANG
+				if _, ok := devConfig["Target_use_sdclang"]; ok {
+					return devConfig["Target_use_sdclang"].(bool)
+				}
+			}
+		}
+		file.Close()
+	}
+	return false
 }

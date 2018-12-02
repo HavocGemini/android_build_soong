@@ -250,6 +250,7 @@ type builderFlags struct {
 	rsFlags        string
 	toolchain      config.Toolchain
 	clang          bool
+	sdclang        bool
 	tidy           bool
 	coverage       bool
 	sAbiDump       bool
@@ -263,6 +264,8 @@ type builderFlags struct {
 	stripKeepSymbols       bool
 	stripKeepMiniDebugInfo bool
 	stripAddGnuDebuglink   bool
+
+	quicksilver bool
 }
 
 type Objects struct {
@@ -428,8 +431,25 @@ func TransformSourceToObj(ctx android.ModuleContext, subdir string, srcFiles and
 
 		ccDesc := ccCmd
 
+		var extraFlags string
+		var vendorFlags string
 		if flags.clang {
-			ccCmd = "${config.ClangBin}/" + ccCmd
+			if ctx.Device() {
+				if flags.quicksilver && flags.sdclang {
+					ccCmd = "${config.QuicksilverSDBin}" + ccCmd
+					extraFlags = " ${config.SDClangFlags}"
+				} else if flags.sdclang {
+					ccCmd = "${config.SDClangBin}/" + ccCmd
+					extraFlags = " ${config.SDClangFlags}"
+				} else if flags.quicksilver {
+					ccCmd = "${config.QuicksilverBin}" + ccCmd
+				} else {
+					ccCmd = "${config.ClangBin}/" + ccCmd
+				}
+				vendorFlags = " ${config.VendorClangFlags}"
+			} else {
+				ccCmd = "${config.ClangBin}/" + ccCmd
+			}
 		} else {
 			ccCmd = gccCmd(flags.toolchain, ccCmd)
 		}
@@ -450,7 +470,7 @@ func TransformSourceToObj(ctx android.ModuleContext, subdir string, srcFiles and
 			Implicits:       cFlagsDeps,
 			OrderOnly:       pathDeps,
 			Args: map[string]string{
-				"cFlags": moduleCflags,
+				"cFlags": moduleCflags + extraFlags + vendorFlags,
 				"ccCmd":  ccCmd,
 			},
 		})
@@ -468,7 +488,7 @@ func TransformSourceToObj(ctx android.ModuleContext, subdir string, srcFiles and
 				// support exporting dependencies.
 				Implicit: objFile,
 				Args: map[string]string{
-					"cFlags":    moduleToolingCflags,
+					"cFlags":    moduleToolingCflags + extraFlags + vendorFlags,
 					"tidyFlags": flags.tidyFlags,
 				},
 			})
@@ -618,8 +638,22 @@ func TransformObjToDynamicBinary(ctx android.ModuleContext,
 	crtBegin, crtEnd android.OptionalPath, groupLate bool, flags builderFlags, outputFile android.WritablePath) {
 
 	var ldCmd string
+	var extraFlags string
+	var vendorFlags string
 	if flags.clang {
 		ldCmd = "${config.ClangBin}/clang++"
+		if ctx.Device() {
+			if flags.quicksilver && flags.sdclang {
+				ldCmd = "${config.QuicksilverSDBin}clang++"
+				extraFlags = " ${config.SDClangFlags}"
+			} else if flags.sdclang {
+				ldCmd = "${config.SDClangBin}/clang++"
+				extraFlags = " ${config.SDClangFlags}"
+			} else if flags.quicksilver {
+				ldCmd = "${config.QuicksilverBin}clang++"
+			}
+			vendorFlags = " ${config.VendorClangFlags}"
+                }
 	} else {
 		ldCmd = gccCmd(flags.toolchain, "g++")
 	}
@@ -677,7 +711,7 @@ func TransformObjToDynamicBinary(ctx android.ModuleContext,
 			"ldCmd":    ldCmd,
 			"crtBegin": crtBegin.String(),
 			"libFlags": strings.Join(libFlagsList, " "),
-			"ldFlags":  flags.ldFlags,
+			"ldFlags":  flags.ldFlags + extraFlags + vendorFlags,
 			"crtEnd":   crtEnd.String(),
 		},
 	})
@@ -730,6 +764,20 @@ func SourceAbiDiff(ctx android.ModuleContext, inputDump android.Path, referenceD
 	if isVndkExt {
 		localAbiCheckAllowFlags = append(localAbiCheckAllowFlags, "-allow-extensions")
 	}
+	var sdclangAbiCheckIgnoreList = []string{
+		"libbinder",
+		"libhwbinder",
+		"libprotobuf-cpp-lite",
+		"libprotobuf-cpp-full",
+		"libunwindstack",
+		"libvixl-arm64",
+		"libvixl-arm",
+		"libc++",
+	}
+	if config.SDClang && !inList("-advice-only", localAbiCheckAllowFlags) &&
+		inList(ctx.ModuleName(), sdclangAbiCheckIgnoreList) {
+		localAbiCheckAllowFlags = append(localAbiCheckAllowFlags, "-advice-only")
+	}
 
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        sAbiDiff,
@@ -769,8 +817,22 @@ func TransformObjsToObj(ctx android.ModuleContext, objFiles android.Paths,
 	flags builderFlags, outputFile android.WritablePath) {
 
 	var ldCmd string
+        var extraFlags string
+        var vendorFlags string
 	if flags.clang {
 		ldCmd = "${config.ClangBin}/clang++"
+		if ctx.Device() {
+			if flags.quicksilver && flags.sdclang {
+				ldCmd = "${config.QuicksilverSDBin}clang++"
+				extraFlags = " ${config.SDClangFlags}"
+			} else if flags.sdclang {
+				ldCmd = "${config.SDClangBin}/clang++"
+				extraFlags = " ${config.SDClangFlags}"
+			} else if flags.quicksilver {
+				ldCmd = "${config.QuicksilverBin}clang++"
+			}
+			vendorFlags = " ${config.VendorClangFlags}"
+                }
 	} else {
 		ldCmd = gccCmd(flags.toolchain, "g++")
 	}
@@ -782,7 +844,7 @@ func TransformObjsToObj(ctx android.ModuleContext, objFiles android.Paths,
 		Inputs:      objFiles,
 		Args: map[string]string{
 			"ldCmd":   ldCmd,
-			"ldFlags": flags.ldFlags,
+			"ldFlags": flags.ldFlags + extraFlags + vendorFlags,
 		},
 	})
 }

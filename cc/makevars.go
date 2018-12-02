@@ -17,6 +17,7 @@ package cc
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -64,6 +65,7 @@ func makeStringOfWarningAllowedProjects() string {
 }
 
 func makeVarsProvider(ctx android.MakeVarsContext) {
+	sdclangMakeVars(ctx)
 	ctx.Strict("LLVM_RELEASE_VERSION", "${config.ClangShortVersion}")
 	ctx.Strict("LLVM_PREBUILTS_VERSION", "${config.ClangVersion}")
 	ctx.Strict("LLVM_PREBUILTS_BASE", "${config.ClangBase}")
@@ -182,6 +184,14 @@ func makeVarsProvider(ctx android.MakeVarsContext) {
 	if len(deviceTargets) > 1 {
 		makeVarsToolchain(ctx, "2ND_", deviceTargets[1])
 	}
+}
+
+func sdclangMakeVars(ctx android.MakeVarsContext) {
+	if config.SDClang {
+		ctx.Strict("SDCLANG", strconv.FormatBool(config.SDClang))
+	}
+	ctx.Strict("SDCLANG_PATH", "${config.SDClangBin}")
+	ctx.Strict("SDCLANG_COMMON_FLAGS", "${config.SDClangFlags}")
 }
 
 func makeVarsToolchain(ctx android.MakeVarsContext, secondPrefix string,
@@ -318,7 +328,7 @@ func makeVarsToolchain(ctx android.MakeVarsContext, secondPrefix string,
 		ctx.Strict(makePrefix+"STRIP", gccCmd(toolchain, "strip"))
 		ctx.Strict(makePrefix+"GCC_VERSION", toolchain.GccVersion())
 		ctx.Strict(makePrefix+"NDK_GCC_VERSION", toolchain.GccVersion())
-		ctx.Strict(makePrefix+"NDK_TRIPLE", toolchain.ClangTriple())
+		ctx.Strict(makePrefix+"NDK_TRIPLE", config.NDKTriple(toolchain))
 	}
 
 	if target.Os.Class == android.Host || target.Os.Class == android.HostCross {

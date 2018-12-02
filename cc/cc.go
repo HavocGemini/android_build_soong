@@ -133,6 +133,7 @@ type Flags struct {
 
 	Toolchain config.Toolchain
 	Clang     bool
+	Sdclang   bool
 	Tidy      bool
 	Coverage  bool
 	SAbiDump  bool
@@ -146,6 +147,8 @@ type Flags struct {
 
 	GroupStaticLibs bool
 	ArGoldPlugin    bool // Whether LLVM gold plugin option is passed to llvm-ar
+
+	Quicksilver bool // Whether module supports Quicksilver or not
 }
 
 type ObjectLinkerProperties struct {
@@ -161,6 +164,9 @@ type BaseProperties struct {
 	// compile module with clang instead of gcc
 	Clang *bool `android:"arch_variant"`
 
+	// compile module with SDLLVM instead of AOSP LLVM
+	Sdclang *bool `android:"arch_variant"`
+
 	// Minimum sdk version supported when compiling against the ndk
 	Sdk_version *string
 
@@ -173,6 +179,9 @@ type BaseProperties struct {
 	// *.logtags files, to combine together in order to generate the /system/etc/event-log-tags
 	// file
 	Logtags []string
+
+	// Whether module supports Quicksilver or not
+	Quicksilver *bool `android:"arch_variant"`
 }
 
 type VendorProperties struct {
@@ -675,6 +684,8 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	flags := Flags{
 		Toolchain: c.toolchain(ctx),
 		Clang:     c.clang(ctx),
+		Sdclang:   c.sdclang(ctx),
+		Quicksilver: c.quicksilver(ctx),
 	}
 	if c.compiler != nil {
 		flags = c.compiler.compilerFlags(ctx, flags, deps)
@@ -1136,6 +1147,25 @@ func checkLinkType(ctx android.ModuleContext, from *Module, to *Module, tag depe
 	}
 }
 
+func (c *Module) sdclang(ctx BaseModuleContext) bool {
+	sdclang := Bool(c.Properties.Sdclang)
+
+	if !c.clang(ctx) {
+		return false
+	}
+
+	// SDLLVM is not for host build
+	if ctx.Host() {
+		return false
+	}
+
+	if c.Properties.Sdclang == nil && config.SDClang {
+		return true
+	}
+
+	return sdclang
+}
+
 // Convert dependencies to paths.  Returns a PathDeps containing paths
 func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 	var depPaths PathDeps
@@ -1587,6 +1617,20 @@ func getCurrentNdkPrebuiltVersion(ctx DepsContext) string {
 		return strconv.Itoa(config.NdkMaxPrebuiltVersionInt)
 	}
 	return ctx.Config().PlatformSdkVersion()
+}
+
+func (c *Module) quicksilver(ctx BaseModuleContext) bool {
+	quicksilver := Bool(c.Properties.Quicksilver)
+
+	if !c.clang(ctx) {
+		quicksilver = false
+	}
+
+	if ctx.Host() {
+		quicksilver = false
+	}
+
+	return quicksilver
 }
 
 var Bool = proptools.Bool

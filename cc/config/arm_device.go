@@ -98,7 +98,7 @@ var (
 			"-D__ARM_FEATURE_LPAE=1",
 		},
 		"cortex-a55": []string{
-			"-mcpu=cortex-a53",
+			"-mcpu=cortex-a55",
 			"-mfpu=neon-fp-armv8",
 			// Fake an ARM compiler flag as these processors support LPAE which GCC/clang
 			// don't advertise.
@@ -107,7 +107,7 @@ var (
 			"-D__ARM_FEATURE_LPAE=1",
 		},
 		"cortex-a75": []string{
-			"-mcpu=cortex-a53",
+			"-mcpu=cortex-a55",
 			"-mfpu=neon-fp-armv8",
 			// Fake an ARM compiler flag as these processors support LPAE which GCC/clang
 			// don't advertise.
@@ -142,7 +142,7 @@ var (
 )
 
 const (
-	armGccVersion = "4.9"
+	armGccVersion = "4.9u"
 )
 
 func init() {
@@ -352,6 +352,12 @@ func (t *toolchainArm) InstructionSetFlags(isa string) (string, error) {
 }
 
 func (t *toolchainArm) ClangTriple() string {
+	// http://b/72619014 work around llvm LTO bug.
+	return "armv7a-linux-androideabi"
+}
+
+func (t *toolchainArm) ndkTriple() string {
+	// Use current NDK include path, while ClangTriple is changed.
 	return t.GccTriple()
 }
 
