@@ -106,6 +106,7 @@ func installClean(ctx Context, config Config, what int) {
 		productOut("*.img"),
 		productOut("*.zip*"),
 		productOut("installed-files-vendor.*"),
+		productOut("*.json"),
 		productOut("*Changelog.txt"),
 		productOut("android-info.txt"),
 		productOut("kernel"),
