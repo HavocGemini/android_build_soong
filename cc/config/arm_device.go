@@ -154,7 +154,7 @@ var (
 )
 
 const (
-	armGccVersion = "4.9u"
+	armGccVersion = "9.2"
 )
 
 func init() {
@@ -172,7 +172,7 @@ func init() {
 	pctx.StaticVariable("armGccVersion", armGccVersion)
 
 	pctx.SourcePathVariable("ArmGccRoot",
-		"prebuilts/gcc/${HostPrebuiltTag}/arm/arm-linux-androideabi-${armGccVersion}")
+		"prebuilts/gcc/${HostPrebuiltTag}/arm/arm-ksrt12-linux-androideabi-${armGccVersion}")
 
 	pctx.StaticVariable("ArmToolchainCflags", strings.Join(armToolchainCflags, " "))
 	pctx.StaticVariable("ArmCflags", strings.Join(armCflags, " "))
@@ -308,7 +308,7 @@ func (t *toolchainArm) GccRoot() string {
 }
 
 func (t *toolchainArm) GccTriple() string {
-	return "arm-linux-androideabi"
+	return "arm-ksrt12-linux-androideabi"
 }
 
 func (t *toolchainArm) GccVersion() string {

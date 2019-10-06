@@ -78,7 +78,7 @@ var (
 )
 
 const (
-	arm64GccVersion = "8.x"
+	arm64GccVersion = "9.2"
 )
 
 func init() {
@@ -88,7 +88,7 @@ func init() {
 	pctx.StaticVariable("arm64GccVersion", arm64GccVersion)
 
 	pctx.SourcePathVariable("Arm64GccRoot",
-		"prebuilts/gcc/${HostPrebuiltTag}/aarch64/aarch64-linux-android-${arm64GccVersion}")
+		"prebuilts/gcc/${HostPrebuiltTag}/aarch64/aarch64-ksrt12-linux-android-${arm64GccVersion}")
 
 	pctx.StaticVariable("Arm64Cflags", strings.Join(arm64Cflags, " "))
 	pctx.StaticVariable("Arm64Ldflags", strings.Join(arm64Ldflags, " "))
@@ -176,7 +176,7 @@ func (t *toolchainArm64) GccRoot() string {
 }
 
 func (t *toolchainArm64) GccTriple() string {
-	return "aarch64-linux-android"
+	return "aarch64-ksrt12-linux-android"
 }
 
 func (t *toolchainArm64) GccVersion() string {

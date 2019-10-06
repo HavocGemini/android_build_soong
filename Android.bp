@@ -316,10 +316,10 @@ toolchain_library {
     vendor_available: true,
     arch: {
         arm: {
-            src: "prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9u/lib/gcc/arm-linux-androideabi/4.9.4/libatomic.a",
+            src: "prebuilts/gcc/linux-x86/arm/arm-ksrt12-linux-androideabi-9.2/arm-ksrt12-linux-androideabi/lib/libatomic.a",
         },
         arm64: {
-            src: "prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-8.x/lib/gcc/aarch64-linux-android/8.0.0/libatomic.a",
+            src: "prebuilts/gcc/linux-x86/aarch64/aarch64-ksrt12-linux-android-9.2/aarch64-ksrt12-linux-android/lib64/libatomic.a",
         },
         x86: {
             src: "prebuilts/gcc/linux-x86/x86/x86_64-linux-android-4.9/x86_64-linux-android/lib/libatomic.a",
@@ -336,10 +336,10 @@ toolchain_library {
     vendor_available: true,
     arch: {
         arm: {
-            src: "prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9u/lib/gcc/arm-linux-androideabi/4.9.4/libgcc.a",
+            src: "prebuilts/gcc/linux-x86/arm/arm-ksrt12-linux-androideabi-9.2/lib/gcc/arm-ksrt12-linux-androideabi/9.2.0/libgcc.a",
         },
         arm64: {
-            src: "prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-8.x/lib/gcc/aarch64-linux-android/8.0.0/libgcc.a",
+            src: "prebuilts/gcc/linux-x86/aarch64/aarch64-ksrt12-linux-android-9.2/lib/gcc/aarch64-ksrt12-linux-android/9.2.0/libgcc.a",
         },
         x86: {
             src: "prebuilts/gcc/linux-x86/x86/x86_64-linux-android-4.9/lib/gcc/x86_64-linux-android/4.9.x/32/libgcc.a",
@@ -373,10 +373,10 @@ toolchain_library {
 
     arch: {
         arm: {
-            src: "prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9u/lib/gcc/arm-linux-androideabi/4.9.4/libgcov.a",
+            src: "prebuilts/gcc/linux-x86/arm/arm-ksrt12-linux-androideabi-9.2/lib/gcc/arm-ksrt12-linux-androideabi/9.2.0/libgcov.a",
         },
         arm64: {
-            src: "prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-8.x/lib/gcc/aarch64-linux-android/8.0.0/libgcov.a",
+            src: "prebuilts/gcc/linux-x86/aarch64/aarch64-ksrt12-linux-android-9.2/lib/gcc/aarch64-ksrt12-linux-android/9.2.0/libgcov.a",
         },
         x86: {
             src: "prebuilts/gcc/linux-x86/x86/x86_64-linux-android-4.9/lib/gcc/x86_64-linux-android/4.9.x/32/libgcov.a",
